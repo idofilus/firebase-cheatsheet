@@ -1,11 +1,27 @@
 ## Firebase
-A work in progress to contains a full cheatsheet of all the features of firebase in one and simple place
 
+A work in progress to contains a full cheatsheet of all the features of firebase in one and simple place
+You are welcome to do PR
+
+* [Security Rules](#security-rules)
+* [Cloud Functions](#cloud-functions)
+* [Firestore](#firestore)
 
 ## Security Rules
 TODO
 
 ## Cloud Functions
+
+
+##### Import the admin/functions and set a region of the functions
+```
+import * as Functions from "firebase-functions";
+import * as admin from "firebase-admin";
+
+const region = "europe-west1";
+admin.initializeApp();
+const functions = Functions.region(region);
+```
 
 ##### Simple HTTP Trigger
 ```
