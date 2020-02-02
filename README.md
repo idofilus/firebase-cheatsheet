@@ -8,10 +8,11 @@ You are welcome to do PR
 * [Firestore](#firestore)
 
 ## Security Rules
-TODO
+TODO: There is a great video on the firebase channel about this
+
 
 ## Cloud Functions
-
+TODO: https://firebase.google.com/docs/functions/http-events
 
 ##### Import the admin/functions and set a region of the functions
 ```
@@ -27,6 +28,9 @@ const functions = Functions.region(region);
 ```
 export const onExample = functions.https.onRequest(request, response) =>
 {
+    const query = request.query; // Query params
+    const body = request.body; // POST/PUT body
+
     return response.json({data: {success: true}});
 });
 ```
@@ -49,6 +53,30 @@ export const onUserRequest = functions.https.onRequest(request, response) =>
 });
 ```
 
+##### Using exsiting Express apps
+```
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+// Automatically allow cross-origin requests
+app.use(cors({ origin: true }));
+
+// Add middleware to authenticate requests
+app.use(myMiddleware);
+
+// build multiple CRUD interfaces:
+app.get("/:id", (req, res) => res.send(Widgets.getById(req.params.id)));
+app.post("/", (req, res) => res.send(Widgets.create()));
+app.put("/:id", (req, res) => res.send(Widgets.update(req.params.id, req.body)));
+app.delete("/:id", (req, res) => res.send(Widgets.delete(req.params.id)));
+app.get("/", (req, res) => res.send(Widgets.list()));
+
+// Expose Express API as a single Cloud Function:
+exports.widgets = functions.https.onRequest(app);
+```
+[source](https://firebase.google.com/docs/functions/http-events#using_existing_express_apps)
 
 ## Firestore
 
@@ -72,4 +100,26 @@ admin.firestore()
 
             console.log("items:", list);
         });
+```
+
+##### Simple transaction
+
+```
+admin.firestore().runTransaction(t =>
+{
+    return admin.firestore()
+        .collection("users")
+        .doc(user.uid)
+        .collection("items")
+        .add({
+            name: "Test"
+        })
+        .then(doc =>
+        {
+            const itemId = doc.id;
+
+            // Use the ref
+            t.set(doc.ref, {name: "Test updated " + itemId});
+        });
+});
 ```

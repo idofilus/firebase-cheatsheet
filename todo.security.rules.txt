@@ -1,0 +1,83 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+     match /vip_orders/{userId} {
+			allow write: if request.auth.uid == userId;
+     }
+  
+  	function isCommunicationBlocked(userId, peerId)
+    {
+    		return (
+        	get(/databases/$(database)/documents/users/$(peerId)/blocked/users).data.keys().hasAny([userId]) ||
+          get(/databases/$(database)/documents/users/$(userId)/blocked/users).data.keys().hasAny([peerId])
+        );
+    }
+
+  	match /users_public/{userId} {
+    	allow write: if request.auth.uid == userId;
+      allow read: if request.auth.uid != null;
+    }
+    
+ 		function valid_user_create() {
+        return !(request.resource.data.keys().hasAll(["vip"]));
+    }
+
+    function valid_user_update() {
+        return request.resource.data.vip == resource.data.vip
+               || (valid_user_create()
+                  && !(resource.data.keys().hasAll(["vip"])))
+    }
+
+  	match /users/{userId} {
+    	allow read: if request.auth.uid == userId;
+      allow create: if request.auth.uid == userId
+                        && valid_user_create(); 
+      allow update: if request.auth.uid == userId
+                        && valid_user_update(); 
+    }
+    
+    match /users/{userId}/blocked/users {
+    	allow read, write: if request.auth.uid == userId;
+    }
+    
+    match /users/{userId}/live/data {
+    	allow read: if request.auth.uid == userId;
+    }
+    
+    match /users/{userId}/blocked/users/{peerId} {
+      allow read: if request.auth.uid == peerId;
+    }
+    
+    match /users/{userId}/profileViewed/{peerId} {
+      allow write: if request.auth.uid == peerId;
+    }
+    
+    match /users/{userId}/messages/{peerId} {
+    	allow read, write: if request.auth.uid == userId;
+    }
+    
+		match /users/{userId}/liked/{peerId} {
+    	allow read, write: if request.auth.uid == userId;
+    }
+    
+		match /users/{userId}/likedMe/{peerId} {
+    	allow read, write: if request.auth.uid == userId;
+    }
+    
+     match /messages/{chatId}/{chatCollectionId}/{document=**} {
+     	allow write: if ((chatId.split("-")[0] == request.auth.uid || chatId.split("-")[1] == request.auth.uid) && !isCommunicationBlocked(chatId.split("-")[0], chatId.split("-")[1]));
+     }
+     
+     match /messages/{chatId}/{chatCollectionId}/{document=**} {
+     	allow read: if (chatCollectionId.split("-")[0] == request.auth.uid || chatCollectionId.split("-")[1] == request.auth.uid);
+     }
+     
+    match /messages/{chatId} {
+    	allow write: if ((chatId.split("-")[0] == request.auth.uid || chatId.split("-")[1] == request.auth.uid) && !isCommunicationBlocked(chatId.split("-")[0], chatId.split("-")[1]));
+    }
+    
+    match /messages/{chatId} {
+    	allow read: if (chatId.split("-")[0] == request.auth.uid || chatId.split("-")[1] == request.auth.uid);
+    }
+  }
+}
